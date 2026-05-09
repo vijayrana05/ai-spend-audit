@@ -23,3 +23,17 @@
 **Blockers / what I'm stuck on:** Need to refine plan nuances (e.g., minimum seats on team tiers, usage-based plans, and the "retail vs credits" framing) so recommendations stay financially credible. Also still need to resolve the `frontend/src/lib/server.ts` build/typecheck issue (Vite env handling / moving server-only code out of the frontend).
 
 **Plan for tomorrow:** Expand the rule set for Claude/ChatGPT (min seats + plan comparisons), improve credits logic and UI messaging, add more audit engine tests for the new rules, and start Phase 3 work on a proper shareable results flow.
+
+---
+
+## Day 3 — 2026-05-09
+
+**Hours worked:** 6
+
+**What I did:** Completed Phase 3 (shareable audits + OG tags + real persistence). Built backend endpoints for creating and retrieving share records (`POST /api/audits`, `GET /api/share/:id`) and an OG-tag HTML route (`GET /share/:id`) that redirects to the frontend share page. Replaced the in-memory share store with a Supabase-backed implementation using `@supabase/supabase-js`, created the `public.public_audits` table via `SUPABASE_SCHEMA.sql`, and wired the backend to read `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` via `dotenv`. On the frontend, kept the share UX (Results → “Create share link” → `/share/:id`) and verified the full flow end-to-end (create record, fetch record, OG meta tag HTML response).
+
+**What I learned:** OG previews for share links don’t work reliably in SPAs without a server-rendered HTML response. Using Supabase with a service role key makes the MVP simple, but it requires careful secret handling (never expose the key client-side).
+
+**Blockers / what I'm stuck on:** Need to rotate any leaked Supabase keys and ensure `.env` files are ignored by git. Still need to fix the lingering Vite build/typecheck issue around server-only Supabase helpers in the frontend (`frontend/src/lib/server.ts`).
+
+**Plan for tomorrow:** Start Phase 4 by adding an LLM-generated narrative summary endpoint in the backend (with prompt versioning in `PROMPTS.md`), store the summary alongside the shared audit in Supabase, and render the narrative section on both Results and Share pages.
