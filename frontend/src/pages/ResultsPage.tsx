@@ -1,20 +1,55 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuditDraft } from "@/state/useAuditDraft";
 import { runAudit, getPricingEntry } from "@/audit/engine";
+import { createShareableAudit } from "@/services/backend";
+
+function formatUsd(value: number) {
+  return `$${Math.round(value * 100) / 100}`;
+}
 
 export default function ResultsPage() {
+  const navigate = useNavigate();
   const { draft } = useAuditDraft();
+  const [shareState, setShareState] = useState<
+    { status: "idle" } | { status: "loading" } | { status: "error"; message: string }
+  >({ status: "idle" });
 
-  const result = runAudit(draft);
+  const result = useMemo(() => runAudit(draft), [draft]);
+
+  const monthlySavings = result.totals.estimatedSavingsMonthlyUsd;
+  const annualSavings = result.totals.estimatedSavingsAnnualUsd;
+
+  const showBigUpsell = monthlySavings > 500;
+  const showOptimized = monthlySavings < 100;
+
+  async function onCreateShareLink() {
+    try {
+      setShareState({ status: "loading" });
+      const resp = await createShareableAudit(result);
+      setShareState({ status: "idle" });
+      navigate(resp.sharePath);
+    } catch (e) {
+      setShareState({
+        status: "error",
+        message: e instanceof Error ? e.message : "Failed to create share link",
+      });
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-6">
         <div className="text-sm font-semibold tracking-tight">Credex • AI Spend Audit</div>
-        <Link to="/audit">
-          <Button variant="outline">Edit inputs</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/audit">
+            <Button variant="outline">Edit inputs</Button>
+          </Link>
+          <Button onClick={onCreateShareLink} disabled={shareState.status === "loading"}>
+            {shareState.status === "loading" ? "Creating…" : "Create share link"}
+          </Button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-5xl space-y-6 px-4 pb-16">
@@ -23,16 +58,19 @@ export default function ResultsPage() {
           <div className="mt-2 grid gap-3 md:grid-cols-2">
             <div className="rounded-xl border bg-background p-5">
               <div className="text-xs text-muted-foreground">Monthly</div>
-              <div className="mt-1 text-4xl font-semibold">${result.totals.estimatedSavingsMonthlyUsd}</div>
+              <div className="mt-1 text-4xl font-semibold">{formatUsd(monthlySavings)}</div>
             </div>
             <div className="rounded-xl border bg-background p-5">
               <div className="text-xs text-muted-foreground">Annual</div>
-              <div className="mt-1 text-4xl font-semibold">${result.totals.estimatedSavingsAnnualUsd}</div>
+              <div className="mt-1 text-4xl font-semibold">{formatUsd(annualSavings)}</div>
             </div>
           </div>
           <div className="mt-4 text-sm text-muted-foreground">
-            Current monthly spend (from your inputs): ${result.totals.currentMonthlySpendUsd}
+            Current monthly spend (from your inputs): {formatUsd(result.totals.currentMonthlySpendUsd)}
           </div>
+          {shareState.status === "error" ? (
+            <div className="mt-3 text-sm text-destructive">{shareState.message}</div>
+          ) : null}
         </section>
 
         <section className="rounded-2xl border bg-card p-6 shadow-sm">
@@ -49,12 +87,13 @@ export default function ResultsPage() {
                       <div>
                         <div className="text-sm font-semibold">{currentPricing.tool}</div>
                         <div className="mt-1 text-xs text-muted-foreground">
-                          Current: {currentPricing.planName} • {item.current.seats} seat(s) • ${item.current.monthlySpendUsd}/mo
+                          Current: {currentPricing.planName} • {item.current.seats} seat(s) •{" "}
+                          {formatUsd(item.current.monthlySpendUsd)}/mo
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-xs text-muted-foreground">Est. savings</div>
-                        <div className="text-lg font-semibold">${item.estimatedSavingsMonthlyUsd}/mo</div>
+                        <div className="text-lg font-semibold">{formatUsd(item.estimatedSavingsMonthlyUsd)}/mo</div>
                       </div>
                     </div>
 
@@ -94,10 +133,38 @@ export default function ResultsPage() {
 
         <section className="rounded-2xl border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Credex recommendation</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Phase 2: Credex credits are suggested for meaningful API spend (conservative 10% estimate). Lead capture and
-            email confirmation are added in Phase 5.
-          </p>
+
+          {showBigUpsell ? (
+            <div className="mt-3 rounded-xl border bg-background p-5">
+              <div className="text-sm font-semibold">You could save meaningfully with discounted credits</div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Your estimated savings are {formatUsd(monthlySavings)}/mo. Credex can help structure discounted credits and
+                reduce your retail API spend.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button>Book a Credex consult</Button>
+                <Button variant="outline">Email me the full breakdown</Button>
+              </div>
+            </div>
+          ) : showOptimized ? (
+            <div className="mt-3 rounded-xl border bg-background p-5">
+              <div className="text-sm font-semibold">Your AI spend already looks fairly optimized</div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                We didn’t find major plan-level waste. If your usage changes, new optimizations may appear.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button variant="outline">Notify me about new optimizations</Button>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground">
+              If you have meaningful API usage, discounted credits can reduce your effective cost. In Phase 5 we’ll add lead capture + email.
+            </p>
+          )}
+
+          <div className="mt-4 text-xs text-muted-foreground">
+            Phase 3 note: CTAs are UI-only for now; lead capture + email confirmation is implemented in Phase 5.
+          </div>
         </section>
       </main>
     </div>
