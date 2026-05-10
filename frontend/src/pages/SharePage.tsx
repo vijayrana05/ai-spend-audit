@@ -3,15 +3,23 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { fetchSharedAudit } from "@/services/backend";
 import { getPricingEntry } from "@/audit/engine";
+import { generateNarrativeForShare, type NarrativeSummary } from "@/services/narrative";
 
 type LoadState =
   | { status: "idle" | "loading" }
   | { status: "error"; message: string }
   | { status: "success"; data: any };
 
+type NarrativeState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "success"; summary: NarrativeSummary; model: string; promptVersion: string; cached: boolean };
+
 export default function SharePage() {
   const { id } = useParams();
   const [state, setState] = useState<LoadState>({ status: "idle" });
+  const [narrative, setNarrative] = useState<NarrativeState>({ status: "idle" });
 
   useEffect(() => {
     if (!id) return;
@@ -37,6 +45,23 @@ export default function SharePage() {
     if (state.status !== "success") return null;
     return state.data?.auditResult ?? null;
   }, [state]);
+
+  async function onGenerateNarrative() {
+    if (!id) return;
+    try {
+      setNarrative({ status: "loading" });
+      const resp = await generateNarrativeForShare(id);
+      setNarrative({
+        status: "success",
+        summary: resp.narrativeSummary,
+        model: resp.model,
+        promptVersion: resp.promptVersion,
+        cached: resp.cached,
+      });
+    } catch (e) {
+      setNarrative({ status: "error", message: e instanceof Error ? e.message : "Failed to generate narrative" });
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -69,6 +94,78 @@ export default function SharePage() {
                   <div className="text-xs text-muted-foreground">Annual savings</div>
                   <div className="mt-1 text-4xl font-semibold">${audit.totals?.estimatedSavingsAnnualUsd ?? 0}</div>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border bg-background p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold">AI narrative summary</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Phase 4: generated from the sanitized audit payload.
+                    </div>
+                  </div>
+                  <Button onClick={onGenerateNarrative} disabled={narrative.status === "loading"}>
+                    {narrative.status === "loading" ? "Generating…" : "Generate summary"}
+                  </Button>
+                </div>
+
+                {narrative.status === "error" ? (
+                  <div className="mt-4 text-sm text-destructive">{narrative.message}</div>
+                ) : narrative.status === "success" ? (
+                  <div className="mt-4 grid gap-4">
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground">Executive summary</div>
+                      <div className="mt-1 text-sm">{narrative.summary.executiveSummary}</div>
+                    </div>
+
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground">Top findings</div>
+                      <ul className="mt-2 list-disc space-y-2 pl-5 text-sm">
+                        {narrative.summary.topFindings.map((f, idx) => (
+                          <li key={idx}>
+                            <span className="font-medium">{f.title}:</span> {f.detail}
+                            {typeof f.impactUsdMonthly === "number" ? (
+                              <span className="text-muted-foreground"> (≈ ${f.impactUsdMonthly}/mo)</span>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground">Action plan</div>
+                      <ul className="mt-2 list-disc space-y-2 pl-5 text-sm">
+                        {narrative.summary.actionPlan.map((s, idx) => (
+                          <li key={idx}>
+                            {s.step} <span className="text-muted-foreground">({s.owner})</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground">Assumptions & caveats</div>
+                      <ul className="mt-2 list-disc space-y-2 pl-5 text-sm">
+                        {narrative.summary.assumptionsAndCaveats.map((c, idx) => (
+                          <li key={idx}>{c}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground">
+                      Model: {narrative.model} • Prompt: {narrative.promptVersion}
+                      {narrative.cached ? " • cached" : ""}
+                    </div>
+
+                    <div className="rounded-lg border bg-card p-4 text-xs text-muted-foreground">
+                      {narrative.summary.disclaimer}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 text-sm text-muted-foreground">
+                    Click “Generate summary” to produce a narrative summary for this shared audit.
+                  </div>
+                )}
               </div>
 
               <div className="rounded-2xl border bg-background p-5">

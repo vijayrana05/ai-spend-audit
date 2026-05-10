@@ -9,6 +9,7 @@ const cors_1 = __importDefault(require("cors"));
 const audits_1 = require("./routes/audits");
 const share_1 = require("./routes/share");
 const sharePage_1 = require("./routes/sharePage");
+const narrative_1 = require("./routes/narrative");
 function createApp() {
     const app = (0, express_1.default)();
     app.use((0, cors_1.default)());
@@ -20,5 +21,6 @@ function createApp() {
     app.use("/share", sharePage_1.sharePageRouter);
     app.use("/api/audits", audits_1.auditsRouter);
     app.use("/api/share", share_1.shareRouter);
+    app.use("/api/narrative", narrative_1.narrativeRouter);
     return app;
 }

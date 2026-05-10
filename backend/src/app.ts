@@ -4,6 +4,7 @@ import cors from "cors";
 import { auditsRouter } from "./routes/audits";
 import { shareRouter } from "./routes/share";
 import { sharePageRouter } from "./routes/sharePage";
+import { narrativeRouter } from "./routes/narrative";
 
 export function createApp() {
   const app = express();
@@ -20,6 +21,7 @@ export function createApp() {
 
   app.use("/api/audits", auditsRouter);
   app.use("/api/share", shareRouter);
+  app.use("/api/narrative", narrativeRouter);
 
   return app;
 }
