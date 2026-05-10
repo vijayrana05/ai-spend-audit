@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { fetchSharedAudit } from "@/services/backend";
 import { getPricingEntry } from "@/audit/engine";
 import { generateNarrativeForShare, type NarrativeSummary } from "@/services/narrative";
+import { createLead } from "@/services/leads";
 
 type LoadState =
   | { status: "idle" | "loading" }
@@ -16,10 +17,20 @@ type NarrativeState =
   | { status: "error"; message: string }
   | { status: "success"; summary: NarrativeSummary; model: string; promptVersion: string; cached: boolean };
 
+type LeadState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success" }
+  | { status: "error"; message: string };
+
 export default function SharePage() {
   const { id } = useParams();
   const [state, setState] = useState<LoadState>({ status: "idle" });
   const [narrative, setNarrative] = useState<NarrativeState>({ status: "idle" });
+
+  const [leadEmail, setLeadEmail] = useState("");
+  const [leadCompanyTrap, setLeadCompanyTrap] = useState("");
+  const [leadState, setLeadState] = useState<LeadState>({ status: "idle" });
 
   useEffect(() => {
     if (!id) return;
@@ -60,6 +71,17 @@ export default function SharePage() {
       });
     } catch (e) {
       setNarrative({ status: "error", message: e instanceof Error ? e.message : "Failed to generate narrative" });
+    }
+  }
+
+  async function onSubmitLead() {
+    if (!id) return;
+    try {
+      setLeadState({ status: "loading" });
+      await createLead({ email: leadEmail, shareId: id, source: "share", honeypot: leadCompanyTrap });
+      setLeadState({ status: "success" });
+    } catch (e) {
+      setLeadState({ status: "error", message: e instanceof Error ? e.message : "Failed to submit" });
     }
   }
 
@@ -205,6 +227,43 @@ export default function SharePage() {
                     );
                   })}
                 </div>
+              </div>
+
+              <div className="rounded-2xl border bg-background p-5">
+                <div className="text-sm font-semibold">Get help implementing these savings</div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Phase 5: leave an email and we’ll follow up. (No automated email send yet.)
+                </div>
+
+                {/* Honeypot (hidden) */}
+                <label className="hidden">
+                  Company
+                  <input
+                    value={leadCompanyTrap}
+                    onChange={(e) => setLeadCompanyTrap(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+                </label>
+
+                <div className="mt-3 flex gap-2">
+                  <input
+                    value={leadEmail}
+                    onChange={(e) => setLeadEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    type="email"
+                    autoComplete="email"
+                  />
+                  <Button onClick={onSubmitLead} disabled={leadState.status === "loading" || !leadEmail.trim()}>
+                    {leadState.status === "loading" ? "Sending…" : "Send"}
+                  </Button>
+                </div>
+                {leadState.status === "success" ? (
+                  <div className="mt-2 text-xs text-muted-foreground">Thanks — we’ll reach out.</div>
+                ) : leadState.status === "error" ? (
+                  <div className="mt-2 text-xs text-destructive">{leadState.message}</div>
+                ) : null}
               </div>
 
               <div className="text-xs text-muted-foreground">

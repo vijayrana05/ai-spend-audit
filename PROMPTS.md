@@ -47,3 +47,31 @@ Constraints:
 
 ### Versioning
 - Current prompt version: `phase4_narrative_v1`
+
+---
+
+## Phase 5 — Lead capture (non-model)
+
+Phase 5 adds user lead capture (email) so users can request follow-up after seeing results.
+
+- Collection points:
+  - Results page CTA (private, after running an audit)
+  - Shared audit page CTA (public, tied to `shareId`)
+- Storage: Supabase table `public.leads`
+- Notes:
+  - No model prompts are used in this phase.
+  - Automated email sending is intentionally not implemented yet (MVP stores leads only).
+
+### Abuse protection (MVP)
+
+This project implements basic abuse protection on the backend:
+
+- **Rate limiting:** `express-rate-limit` is applied per-route.
+  - `/api/narrative`: low limit (LLM calls are expensive)
+  - `/api/leads`: low limit (prevents spam)
+  - `/api/share/:id`: higher limit (public sharing reads)
+  - `/api/audits`: moderate limit (prevents DB spam)
+
+Planned next step (not yet implemented):
+- **Honeypot field** on the lead form + backend rejection if filled.
+- Optionally **hCaptcha** if the app is exposed publicly.

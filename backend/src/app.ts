@@ -5,6 +5,13 @@ import { auditsRouter } from "./routes/audits";
 import { shareRouter } from "./routes/share";
 import { sharePageRouter } from "./routes/sharePage";
 import { narrativeRouter } from "./routes/narrative";
+import { leadsRouter } from "./routes/leads";
+import {
+  leadsLimiter,
+  narrativeLimiter,
+  shareCreateLimiter,
+  shareReadLimiter,
+} from "./middleware/rateLimit";
 
 export function createApp() {
   const app = express();
@@ -19,9 +26,10 @@ export function createApp() {
   // OG tags need to be served from backend, not from a Vite SPA.
   app.use("/share", sharePageRouter);
 
-  app.use("/api/audits", auditsRouter);
-  app.use("/api/share", shareRouter);
-  app.use("/api/narrative", narrativeRouter);
+  app.use("/api/audits", shareCreateLimiter, auditsRouter);
+  app.use("/api/share", shareReadLimiter, shareRouter);
+  app.use("/api/narrative", narrativeLimiter, narrativeRouter);
+  app.use("/api/leads", leadsLimiter, leadsRouter);
 
   return app;
 }

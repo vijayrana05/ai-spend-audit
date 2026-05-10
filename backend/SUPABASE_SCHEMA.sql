@@ -14,6 +14,19 @@ alter table public.public_audits
   add column if not exists narrative_prompt_version text,
   add column if not exists narrative_created_at timestamptz;
 
+-- Phase 5: leads capture
+create table if not exists public.leads (
+  id bigserial primary key,
+  created_at timestamptz not null default now(),
+  email text not null,
+  share_id text null,
+  source text not null default 'unknown'
+);
+
+-- Helpful indexes / constraints for MVP
+create unique index if not exists leads_email_unique on public.leads ((lower(email)));
+create index if not exists leads_share_id_idx on public.leads (share_id);
+
 -- Optional: allow anonymous read for shared audits.
 -- If you keep RLS enabled, you'd need policies instead.
 -- For MVP simplicity, you can disable RLS on this table:

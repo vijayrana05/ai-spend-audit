@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuditDraft } from "@/state/useAuditDraft";
 import { runAudit, getPricingEntry } from "@/audit/engine";
 import { createShareableAudit } from "@/services/backend";
+import { createLead } from "@/services/leads";
 
 function formatUsd(value: number) {
   return `$${Math.round(value * 100) / 100}`;
@@ -14,6 +15,15 @@ export default function ResultsPage() {
   const { draft } = useAuditDraft();
   const [shareState, setShareState] = useState<
     { status: "idle" } | { status: "loading" } | { status: "error"; message: string }
+  >({ status: "idle" });
+
+  const [leadEmail, setLeadEmail] = useState("");
+  const [leadCompanyTrap, setLeadCompanyTrap] = useState("");
+  const [leadState, setLeadState] = useState<
+    | { status: "idle" }
+    | { status: "loading" }
+    | { status: "success" }
+    | { status: "error"; message: string }
   >({ status: "idle" });
 
   const result = useMemo(() => runAudit(draft), [draft]);
@@ -34,6 +44,19 @@ export default function ResultsPage() {
       setShareState({
         status: "error",
         message: e instanceof Error ? e.message : "Failed to create share link",
+      });
+    }
+  }
+
+  async function onSubmitLead() {
+    try {
+      setLeadState({ status: "loading" });
+      await createLead({ email: leadEmail, source: "results", honeypot: leadCompanyTrap });
+      setLeadState({ status: "success" });
+    } catch (e) {
+      setLeadState({
+        status: "error",
+        message: e instanceof Error ? e.message : "Failed to submit",
       });
     }
   }
@@ -141,9 +164,57 @@ export default function ResultsPage() {
                 Your estimated savings are {formatUsd(monthlySavings)}/mo. Credex can help structure discounted credits and
                 reduce your retail API spend.
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button>Book a Credex consult</Button>
-                <Button variant="outline">Email me the full breakdown</Button>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <div className="rounded-xl border bg-card p-4">
+                  <div className="text-sm font-medium">Get the full breakdown</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Phase 5: enter your email and we’ll follow up. (No automated email send yet.)
+                  </div>
+
+                  {/* Honeypot (hidden) */}
+                  <label className="hidden">
+                    Company
+                    <input
+                      value={leadCompanyTrap}
+                      onChange={(e) => setLeadCompanyTrap(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </label>
+
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      value={leadEmail}
+                      onChange={(e) => setLeadEmail(e.target.value)}
+                      placeholder="you@company.com"
+                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      type="email"
+                      autoComplete="email"
+                    />
+                    <Button onClick={onSubmitLead} disabled={leadState.status === "loading" || !leadEmail.trim()}>
+                      {leadState.status === "loading" ? "Sending…" : "Send"}
+                    </Button>
+                  </div>
+                  {leadState.status === "success" ? (
+                    <div className="mt-2 text-xs text-muted-foreground">Thanks — we’ll reach out.</div>
+                  ) : leadState.status === "error" ? (
+                    <div className="mt-2 text-xs text-destructive">{leadState.message}</div>
+                  ) : null}
+                </div>
+
+                <div className="rounded-xl border bg-card p-4">
+                  <div className="text-sm font-medium">Next step</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Prefer a call? We’ll add calendar booking in a later phase.
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button disabled>Book a Credex consult</Button>
+                    <Button variant="outline" onClick={onCreateShareLink} disabled={shareState.status === "loading"}>
+                      Share this audit
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           ) : showOptimized ? (
@@ -153,17 +224,19 @@ export default function ResultsPage() {
                 We didn’t find major plan-level waste. If your usage changes, new optimizations may appear.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="outline">Notify me about new optimizations</Button>
+                <Button variant="outline" disabled>
+                  Notify me about new optimizations
+                </Button>
               </div>
             </div>
           ) : (
             <p className="mt-2 text-sm text-muted-foreground">
-              If you have meaningful API usage, discounted credits can reduce your effective cost. In Phase 5 we’ll add lead capture + email.
+              If you have meaningful API usage, discounted credits can reduce your effective cost.
             </p>
           )}
 
           <div className="mt-4 text-xs text-muted-foreground">
-            Phase 3 note: CTAs are UI-only for now; lead capture + email confirmation is implemented in Phase 5.
+            Phase 5 note: lead capture is now wired to the backend via /api/leads.
           </div>
         </section>
       </main>
