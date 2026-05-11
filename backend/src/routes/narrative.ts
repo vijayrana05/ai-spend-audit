@@ -3,6 +3,7 @@ import { z } from "zod";
 import { generateNarrativeSummary, GEMINI_MODEL } from "../services/geminiNarrative";
 import { supabase } from "../config/supabase";
 import { NARRATIVE_PROMPT_VERSION } from "../types/narrative";
+import { buildFallbackNarrative } from "../services/fallbackNarrative";
 
 export const narrativeRouter = Router();
 
@@ -98,7 +99,7 @@ narrativeRouter.post("/", async (req, res) => {
       if (!validated2.success) {
         // eslint-disable-next-line no-console
         console.error("/api/narrative: repair failed schema validation", { shareId, issues: validated2.error.issues });
-        return res.status(500).json({ error: "Narrative summary returned invalid schema" });
+        throw new Error("Narrative summary returned invalid schema");
       }
 
       summary = validated2.data;
@@ -128,10 +129,38 @@ narrativeRouter.post("/", async (req, res) => {
       promptVersion: NARRATIVE_PROMPT_VERSION,
       narrativeSummary: summary,
       cached: false,
+      fallback: false,
     });
   } catch (e) {
+    // LLM failure fallback (required by spec)
     // eslint-disable-next-line no-console
-    console.error("/api/narrative: generation failed", { shareId, error: e });
-    return res.status(500).json({ error: e instanceof Error ? e.message : "Failed to generate narrative" });
+    console.warn("/api/narrative: generation failed, using fallback narrative", { shareId, error: e });
+
+    const fallback = buildFallbackNarrative(data.audit_result as any);
+
+    const { error: updateError } = await supabase
+      .from("public_audits")
+      .update({
+        narrative_summary: fallback as any,
+        narrative_model: "fallback-template",
+        narrative_prompt_version: NARRATIVE_PROMPT_VERSION,
+        narrative_created_at: new Date().toISOString(),
+      })
+      .eq("id", shareId);
+
+    if (updateError) {
+      // eslint-disable-next-line no-console
+      console.error("/api/narrative: failed to persist fallback narrative", { shareId, updateError });
+      // still return fallback so UX works
+    }
+
+    return res.status(200).json({
+      shareId,
+      model: "fallback-template",
+      promptVersion: NARRATIVE_PROMPT_VERSION,
+      narrativeSummary: fallback,
+      cached: false,
+      fallback: true,
+    });
   }
 });

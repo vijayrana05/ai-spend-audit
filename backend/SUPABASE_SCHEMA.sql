@@ -20,8 +20,15 @@ create table if not exists public.leads (
   created_at timestamptz not null default now(),
   email text not null,
   share_id text null,
-  source text not null default 'unknown'
+  source text not null default 'unknown',
+  company text null,
+  role text null
 );
+
+-- Phase 5 schema upgrade for existing projects
+alter table public.leads
+  add column if not exists company text,
+  add column if not exists role text;
 
 -- Helpful indexes / constraints for MVP
 create unique index if not exists leads_email_unique on public.leads ((lower(email)));

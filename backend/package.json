@@ -20,6 +20,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.1",
     "nanoid": "^5.1.11",
+    "resend": "^6.12.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {

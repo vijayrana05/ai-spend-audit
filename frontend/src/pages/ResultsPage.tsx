@@ -18,6 +18,8 @@ export default function ResultsPage() {
   >({ status: "idle" });
 
   const [leadEmail, setLeadEmail] = useState("");
+  const [leadCompany, setLeadCompany] = useState("");
+  const [leadRole, setLeadRole] = useState("");
   const [leadCompanyTrap, setLeadCompanyTrap] = useState("");
   const [leadState, setLeadState] = useState<
     | { status: "idle" }
@@ -51,7 +53,13 @@ export default function ResultsPage() {
   async function onSubmitLead() {
     try {
       setLeadState({ status: "loading" });
-      await createLead({ email: leadEmail, source: "results", honeypot: leadCompanyTrap });
+      await createLead({
+        email: leadEmail,
+        source: "results",
+        honeypot: leadCompanyTrap,
+        company: leadCompany.trim() ? leadCompany.trim() : undefined,
+        role: leadRole.trim() ? leadRole.trim() : undefined,
+      });
       setLeadState({ status: "success" });
     } catch (e) {
       setLeadState({
@@ -169,7 +177,7 @@ export default function ResultsPage() {
                 <div className="rounded-xl border bg-card p-4">
                   <div className="text-sm font-medium">Get the full breakdown</div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    Phase 5: enter your email and we’ll follow up. (No automated email send yet.)
+                    Enter your email and we’ll send a confirmation. Credex may follow up if savings are large.
                   </div>
 
                   {/* Honeypot (hidden) */}
@@ -183,7 +191,7 @@ export default function ResultsPage() {
                     />
                   </label>
 
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-3 grid gap-2">
                     <input
                       value={leadEmail}
                       onChange={(e) => setLeadEmail(e.target.value)}
@@ -192,12 +200,36 @@ export default function ResultsPage() {
                       type="email"
                       autoComplete="email"
                     />
-                    <Button onClick={onSubmitLead} disabled={leadState.status === "loading" || !leadEmail.trim()}>
-                      {leadState.status === "loading" ? "Sending…" : "Send"}
-                    </Button>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      <input
+                        value={leadCompany}
+                        onChange={(e) => setLeadCompany(e.target.value)}
+                        placeholder="Company (optional)"
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                        type="text"
+                        autoComplete="organization"
+                      />
+                      <input
+                        value={leadRole}
+                        onChange={(e) => setLeadRole(e.target.value)}
+                        placeholder="Role (optional)"
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                        type="text"
+                        autoComplete="organization-title"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={onSubmitLead}
+                        disabled={leadState.status === "loading" || !leadEmail.trim()}
+                      >
+                        {leadState.status === "loading" ? "Sending…" : "Send"}
+                      </Button>
+                    </div>
                   </div>
+
                   {leadState.status === "success" ? (
-                    <div className="mt-2 text-xs text-muted-foreground">Thanks — we’ll reach out.</div>
+                    <div className="mt-2 text-xs text-muted-foreground">Thanks — check your inbox.</div>
                   ) : leadState.status === "error" ? (
                     <div className="mt-2 text-xs text-destructive">{leadState.message}</div>
                   ) : null}
@@ -236,7 +268,7 @@ export default function ResultsPage() {
           )}
 
           <div className="mt-4 text-xs text-muted-foreground">
-            Phase 5 note: lead capture is now wired to the backend via /api/leads.
+            Phase 5 note: lead capture is wired to /api/leads and sends a confirmation email when configured.
           </div>
         </section>
       </main>

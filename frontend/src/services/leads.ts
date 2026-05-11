@@ -5,6 +5,8 @@ export async function createLead(input: {
   shareId?: string;
   source?: "results" | "share" | "unknown";
   honeypot?: string;
+  company?: string;
+  role?: string;
 }) {
   const resp = await fetch(`${BACKEND_BASE_URL}/api/leads`, {
     method: "POST",

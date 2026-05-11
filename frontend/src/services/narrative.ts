@@ -14,6 +14,7 @@ export async function generateNarrativeForShare(shareId: string): Promise<{
   model: string;
   promptVersion: string;
   cached: boolean;
+  fallback?: boolean;
 }> {
   const res = await fetch(`${BACKEND_BASE_URL}/api/narrative`, {
     method: "POST",

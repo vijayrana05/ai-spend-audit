@@ -116,7 +116,7 @@ export default function AuditPage() {
             <select
               className="h-10 w-full rounded-md border bg-background px-3 text-sm"
               value={draft.primaryUseCase}
-              onChange={(e) => setPrimaryUseCase(e.target.value as any)}
+              onChange={(e) => setPrimaryUseCase(e.target.value as typeof draft.primaryUseCase)}
             >
               <option value="coding">Coding</option>
               <option value="writing">Writing</option>

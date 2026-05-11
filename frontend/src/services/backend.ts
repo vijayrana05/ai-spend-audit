@@ -14,7 +14,7 @@ export async function createShareableAudit(auditResult: unknown): Promise<{ shar
   return res.json();
 }
 
-export async function fetchSharedAudit(shareId: string): Promise<any> {
+export async function fetchSharedAudit(shareId: string): Promise<unknown> {
   const res = await fetch(`${BACKEND_BASE_URL}/api/share/${shareId}`);
   if (!res.ok) throw new Error("Not found");
   return res.json();

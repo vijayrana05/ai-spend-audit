@@ -5,11 +5,14 @@ import { fetchSharedAudit } from "@/services/backend";
 import { getPricingEntry } from "@/audit/engine";
 import { generateNarrativeForShare, type NarrativeSummary } from "@/services/narrative";
 import { createLead } from "@/services/leads";
+import type { ToolPlanId } from "@/types/audit";
+
+type SharedAuditResponse = { auditResult: unknown };
 
 type LoadState =
   | { status: "idle" | "loading" }
   | { status: "error"; message: string }
-  | { status: "success"; data: any };
+  | { status: "success"; data: SharedAuditResponse };
 
 type NarrativeState =
   | { status: "idle" }
@@ -23,12 +26,28 @@ type LeadState =
   | { status: "success" }
   | { status: "error"; message: string };
 
+type SharedAuditPayload = {
+  totals?: {
+    estimatedSavingsMonthlyUsd?: number;
+    estimatedSavingsAnnualUsd?: number;
+  };
+  items?: Array<{
+    tool: string;
+    current?: { planId?: ToolPlanId; seats?: number; monthlySpendUsd?: number };
+    estimatedSavingsMonthlyUsd?: number;
+    recommendation?: { action?: string; recommendedPlanId?: ToolPlanId; recommendedTool?: string };
+    explanation?: string;
+  }>;
+};
+
 export default function SharePage() {
   const { id } = useParams();
   const [state, setState] = useState<LoadState>({ status: "idle" });
   const [narrative, setNarrative] = useState<NarrativeState>({ status: "idle" });
 
   const [leadEmail, setLeadEmail] = useState("");
+  const [leadCompany, setLeadCompany] = useState("");
+  const [leadRole, setLeadRole] = useState("");
   const [leadCompanyTrap, setLeadCompanyTrap] = useState("");
   const [leadState, setLeadState] = useState<LeadState>({ status: "idle" });
 
@@ -36,10 +55,11 @@ export default function SharePage() {
     if (!id) return;
     let cancelled = false;
 
-    setState({ status: "loading" });
+    // Avoid setState synchronously in effect (lint rule). Use fetch callbacks only.
     fetchSharedAudit(id)
-      .then((data) => {
+      .then((raw) => {
         if (cancelled) return;
+        const data = raw as SharedAuditResponse;
         setState({ status: "success", data });
       })
       .catch((err) => {
@@ -54,7 +74,7 @@ export default function SharePage() {
 
   const audit = useMemo(() => {
     if (state.status !== "success") return null;
-    return state.data?.auditResult ?? null;
+    return state.data?.auditResult as SharedAuditPayload;
   }, [state]);
 
   async function onGenerateNarrative() {
@@ -78,7 +98,14 @@ export default function SharePage() {
     if (!id) return;
     try {
       setLeadState({ status: "loading" });
-      await createLead({ email: leadEmail, shareId: id, source: "share", honeypot: leadCompanyTrap });
+      await createLead({
+        email: leadEmail,
+        shareId: id,
+        source: "share",
+        honeypot: leadCompanyTrap,
+        company: leadCompany.trim() ? leadCompany.trim() : undefined,
+        role: leadRole.trim() ? leadRole.trim() : undefined,
+      });
       setLeadState({ status: "success" });
     } catch (e) {
       setLeadState({ status: "error", message: e instanceof Error ? e.message : "Failed to submit" });
@@ -193,7 +220,7 @@ export default function SharePage() {
               <div className="rounded-2xl border bg-background p-5">
                 <div className="text-sm font-semibold">Tools</div>
                 <div className="mt-4 grid gap-3">
-                  {(audit.items ?? []).map((item: any) => {
+                  {(audit.items ?? []).map((item) => {
                     const currentPricing = item?.current?.planId ? getPricingEntry(item.current.planId) : null;
                     return (
                       <div key={item.tool} className="rounded-xl border bg-card p-5">
@@ -232,7 +259,7 @@ export default function SharePage() {
               <div className="rounded-2xl border bg-background p-5">
                 <div className="text-sm font-semibold">Get help implementing these savings</div>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  Phase 5: leave an email and we’ll follow up. (No automated email send yet.)
+                  Leave an email and we’ll send a confirmation. Credex may follow up if savings are large.
                 </div>
 
                 {/* Honeypot (hidden) */}
@@ -246,7 +273,7 @@ export default function SharePage() {
                   />
                 </label>
 
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 grid gap-2">
                   <input
                     value={leadEmail}
                     onChange={(e) => setLeadEmail(e.target.value)}
@@ -255,12 +282,33 @@ export default function SharePage() {
                     type="email"
                     autoComplete="email"
                   />
-                  <Button onClick={onSubmitLead} disabled={leadState.status === "loading" || !leadEmail.trim()}>
-                    {leadState.status === "loading" ? "Sending…" : "Send"}
-                  </Button>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <input
+                      value={leadCompany}
+                      onChange={(e) => setLeadCompany(e.target.value)}
+                      placeholder="Company (optional)"
+                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      type="text"
+                      autoComplete="organization"
+                    />
+                    <input
+                      value={leadRole}
+                      onChange={(e) => setLeadRole(e.target.value)}
+                      placeholder="Role (optional)"
+                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      type="text"
+                      autoComplete="organization-title"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button onClick={onSubmitLead} disabled={leadState.status === "loading" || !leadEmail.trim()}>
+                      {leadState.status === "loading" ? "Sending…" : "Send"}
+                    </Button>
+                  </div>
                 </div>
+
                 {leadState.status === "success" ? (
-                  <div className="mt-2 text-xs text-muted-foreground">Thanks — we’ll reach out.</div>
+                  <div className="mt-2 text-xs text-muted-foreground">Thanks — check your inbox.</div>
                 ) : leadState.status === "error" ? (
                   <div className="mt-2 text-xs text-destructive">{leadState.message}</div>
                 ) : null}
