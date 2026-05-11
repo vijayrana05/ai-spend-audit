@@ -37,3 +37,19 @@
 **Blockers / what I'm stuck on:** Need to rotate any leaked Supabase keys and ensure `.env` files are ignored by git. Still need to fix the lingering Vite build/typecheck issue around server-only Supabase helpers in the frontend (`frontend/src/lib/server.ts`).
 
 **Plan for tomorrow:** Start Phase 4 by adding an LLM-generated narrative summary endpoint in the backend (with prompt versioning in `PROMPTS.md`), store the summary alongside the shared audit in Supabase, and render the narrative section on both Results and Share pages.
+
+---
+
+## Day 4 — 2026-05-10
+
+**Hours worked:** 6.5
+
+**What I did:** Completed Phase 4 and implemented Phase 5 lead capture. On Phase 4, I finished the backend narrative summary endpoint (`POST /api/narrative`) and made it reliable by enforcing a strict JSON schema (Zod validation) and adding a single "repair" retry if the model returns malformed output. I also updated the Supabase schema to include narrative columns (`narrative_summary`, `narrative_model`, `narrative_prompt_version`, `narrative_created_at`) using `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` (because `CREATE TABLE IF NOT EXISTS` doesn’t apply upgrades). On the frontend, I kept the “Generate summary” UX on the shared audit page and rendered the narrative sections, along with model + prompt metadata.
+
+For Phase 5, I added lead capture forms on both the Results and Share pages, created a new backend route (`POST /api/leads`) to persist leads into a new `public.leads` table in Supabase, and added basic abuse protection. Abuse protection includes per-route rate limiting (`express-rate-limit`) and a honeypot field that silently drops obvious bot submissions. I also added a unique index on `lower(email)` to reduce duplicate lead spam.
+
+**What I learned:** Schema migrations in Supabase need explicit `ALTER TABLE` steps or existing projects will fail at runtime. For AI-generated JSON, “prompting harder” isn’t enough—server-side validation and retry/repair logic is needed to make the feature production-stable. On lead capture, a combination of rate limiting + honeypot provides a decent MVP baseline without adding extra services.
+
+**Blockers / what I'm stuck on:** Still need to implement a real confirmation email (Resend/Postmark/SES) to fully satisfy the lead capture requirement, and add a fallback templated narrative if the LLM fails. Also need to finish the remaining required root docs + CI workflow and ensure commits are spread across at least 5 calendar days.
+
+**Plan for tomorrow:** Implement confirmation email sending for leads, add graceful fallback narrative behavior on `/api/narrative`, then start the required deliverables (`ARCHITECTURE.md`, `TESTS.md`, `REFLECTION.md`, `GTM.md`, etc.) and GitHub Actions CI.
