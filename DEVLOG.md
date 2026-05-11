@@ -53,3 +53,19 @@ For Phase 5, I added lead capture forms on both the Results and Share pages, cre
 **Blockers / what I'm stuck on:** Still need to implement a real confirmation email (Resend/Postmark/SES) to fully satisfy the lead capture requirement, and add a fallback templated narrative if the LLM fails. Also need to finish the remaining required root docs + CI workflow and ensure commits are spread across at least 5 calendar days.
 
 **Plan for tomorrow:** Implement confirmation email sending for leads, add graceful fallback narrative behavior on `/api/narrative`, then start the required deliverables (`ARCHITECTURE.md`, `TESTS.md`, `REFLECTION.md`, `GTM.md`, etc.) and GitHub Actions CI.
+
+---
+
+## Day 5 — 2026-05-11
+
+**Hours worked:** 7
+
+**What I did:** Finished the remaining “production-style SaaS” requirements that were still open. Implemented a deterministic fallback narrative summary so shared audits remain useful even if the LLM fails, and updated the narrative route to return a valid summary (and persist it) instead of throwing a 500. Implemented lead confirmation emails using Resend (configurable via env) and expanded lead capture to support optional `company` and `role` fields. Added a GitHub Actions CI workflow that runs frontend lint/tests/build and backend build on every push/PR. Created the remaining required root deliverable docs (architecture, tests, reflection, GTM/economics, landing copy, metrics) and updated the root README with setup instructions, deployment notes, and key technical tradeoffs.
+
+On the engineering side, I fixed front-end lint blockers that would fail CI by restructuring the button component exports (to satisfy React Fast Refresh rules), tightening types on the share page payload, and removing remaining explicit `any` usage from linted code paths.
+
+**What I learned:** Making an MVP “launchable” is often less about adding net-new features and more about reliability guardrails and submission packaging: failure modes (LLM errors), abuse protections, CI discipline, and clear documentation. Also, strict lint rules can force better component boundaries and more explicit typing, which pays off quickly once CI is in place.
+
+**Blockers / what I'm stuck on:** The only remaining mandatory item that can’t be “coded” is `USER_INTERVIEWS.md`—it needs 3 real interviews with quotes and resulting design changes. Also still need to add screenshots/demo link and deployed URL to the README.
+
+**Plan for tomorrow:** Conduct 3 user interviews (real founders/operators), update `USER_INTERVIEWS.md` with direct quotes and the specific changes made based on feedback, and add a short Loom demo + screenshots to the README. Then ensure commits are spread across the required calendar days.
