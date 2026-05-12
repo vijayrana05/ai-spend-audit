@@ -232,7 +232,7 @@ export default function ResultsPage() {
                   <p className="text-xs text-[#f0ede8]/40 mt-1">Prefer a call? Calendar booking coming in a later phase.</p>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-auto">
-                  <button disabled className="px-4 py-2 bg-[#f0ede8]/05 text-[#f0ede8]/25 text-sm rounded-lg cursor-not-allowed text-xs">
+                  <button disabled className="px-4 py-2 bg-[#f0ede8]/05 text-[#f0ede8]/25 text-sm rounded-lg cursor-not-allowed">
                     Book a SpendPilot consult
                   </button>
                   <button onClick={onCreateShareLink} disabled={shareState.status === "loading"}
