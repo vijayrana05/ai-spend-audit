@@ -120,7 +120,7 @@ export default function AuditPage() {
         {/* Title */}
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Enter your AI tool spend</h1>
-          <p className="text-sm text-[#f0ede8]/35">Saved locally in your browser — refreshing won't clear it.</p>
+          
         </div>
  
         {/* Context row */}

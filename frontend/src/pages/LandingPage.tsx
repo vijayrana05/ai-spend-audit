@@ -80,7 +80,6 @@ export default function LandingPage() {
             <div className="pt-2 flex items-center gap-4 text-xs text-[#f0ede8]/30">
               <span>✓ No login</span>
               <span className="text-[#f0ede8]/15">·</span>
-              <span>✓ Saved locally in your browser</span>
               <span className="text-[#f0ede8]/15">·</span>
               <span>✓ Email only after results</span>
             </div>
