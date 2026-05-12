@@ -28,7 +28,7 @@
 
 ## Day 3 — 2026-05-09
 
-**Hours worked:** 6
+**Hours worked:** 4
 
 **What I did:** Finished Phase 3 (shareable audits + OG tags + persistence). Added backend endpoints for creating and retrieving shared audits (`POST /api/audits`, `GET /api/share/:id`) and built an OG-tag HTML route (`GET /share/:id`) that redirects to the frontend share page. Replaced the temporary in-memory store with a Supabase-backed implementation using `@supabase/supabase-js`, created the `public.public_audits` table via `SUPABASE_SCHEMA.sql`, and connected the backend to `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` through `dotenv`.
 
@@ -44,7 +44,7 @@ On the frontend side, I kept the share flow simple: Results → “Create share 
 
 ## Day 4 — 2026-05-10
 
-**Hours worked:** 6.5
+**Hours worked:** 4
 
 **What I did:** Completed Phase 4 and implemented Phase 5 lead capture.
 
@@ -64,7 +64,7 @@ For Phase 5, I added lead capture forms on both the Results and Share pages, cre
 
 ## Day 5 — 2026-05-11
 
-**Hours worked:** 7
+**Hours worked:** 3
 
 **What I did:** Finished most of the remaining “production-style SaaS” requirements. Added a deterministic fallback narrative summary so shared audits still return useful output even if the LLM fails, and updated the narrative endpoint to persist fallback summaries instead of returning a 500.
 
@@ -84,7 +84,7 @@ On the frontend side, I fixed several lint issues that were failing CI by restru
 
 ## Day 6 — 2026-05-12
 
-**Hours worked:** 4
+**Hours worked:** 2
 
 **What I did:** Deployed the backend to Render and the frontend to Vercel from the same monorepo using separate service root directories. Connected the deployed frontend to the deployed backend using the `VITE_BACKEND_BASE_URL` environment variable after discovering the live build was still falling back to `localhost`, causing `ERR_CONNECTION_REFUSED`.
 
