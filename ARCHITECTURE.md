@@ -1,61 +1,86 @@
 # ARCHITECTURE
 
-## Overview
-AI Spend Audit is a production-style SaaS MVP that helps startups analyze AI tool subscription/API spend, estimate savings, generate a shareable audit link, and capture leads for Credex.
-
-## High-level diagram
+## 1) System diagram
 
 ```mermaid
 graph TD
-  U[User in Browser] --> FE[Frontend (Vite + React + TS)]
-  FE -->|POST audit payload| BE[Backend (Express + TS)]
+  U[User (Browser)] --> FE[Frontend: Vite + React + TypeScript]
+
+  FE -->|Run deterministic rules| AE[Audit Engine (in-browser)]
+  AE -->|AuditResult JSON| FE
+
+  FE -->|POST /api/audits (sanitized auditResult)| BE[Backend: Express + TypeScript]
   BE -->|Insert/Select| SB[(Supabase Postgres)]
-  BE -->|Generate narrative| LLM[Gemini API]
-  BE -->|Send confirmation| EM[Resend Email API]
-  U -->|Open shared link| BE
-  BE -->|OG HTML + redirect| FE
+
+  FE -->|GET /api/share/:id| BE
+  BE -->|audit_result JSON| FE
+
+  OG[Social crawler (Slack/X)] -->|GET /share/:id| BE
+  BE -->|OG HTML + redirect| OG
+
+  FE -->|POST /api/narrative| BE
+  BE -->|Gemini API (JSON)| LLM[Google Gemini]
+
+  FE -->|POST /api/leads| BE
+  BE -->|Best-effort confirm email| EM[Resend]
 ```
 
-## Data flow
+## 2) Data flow: user input → audit result
 
-### Create audit + share
-1. User enters tool plans/spend/seats + team size + use case.
-2. Frontend runs a **rule-based audit engine** (no AI used for calculations).
-3. User clicks **Create share link**.
-4. Frontend sends sanitized `auditResult` to backend (`POST /api/audits`).
-5. Backend stores the payload in Supabase table `public.public_audits`.
-6. Backend returns `shareId` and share path.
+### A) Capture inputs (frontend)
+1. User enters:
+   - team size
+   - primary use case
+   - tools used (tool + plan + seats + monthly spend)
+2. Inputs are saved to `localStorage` via `useAuditDraft` so refreshes don’t lose progress.
 
-### Shared audit page + OG tags
-- Public OG crawlers request `GET /share/:id` (backend serves OG tags + redirects).
-- The browser loads the SPA route `/share/:id`.
-- Frontend fetches the sanitized audit via `GET /api/share/:id`.
+### B) Compute the audit (deterministic engine)
+1. When the user generates results, the frontend runs `runAudit(draft)`.
+2. The audit engine:
+   - treats user-entered monthly spend as the source of truth for “current spend”
+   - applies rules (downgrade/switch/credits/anomaly detection)
+   - produces an `AuditResult` with totals + per-tool recommendations
+3. The Results UI renders directly from `AuditResult`.
 
-### Narrative summary
-- Frontend calls `POST /api/narrative`.
-- Backend loads the audit payload from Supabase.
-- If narrative is cached, returns it.
-- If not cached:
-  - Attempt Gemini narrative generation with strict JSON schema validation + one repair retry.
-  - On model failure, return a deterministic **fallback template narrative**.
-  - Persist summary and metadata to Supabase.
+### C) Create a share link (backend + DB)
+1. User clicks “Create share link”.
+2. Frontend sends a **sanitized** payload to `POST /api/audits`.
+   - No lead PII (email/company/role) is included in the public audit payload.
+3. Backend stores the payload in Supabase table `public.public_audits`.
+4. Backend returns a `shareId`.
 
-### Lead capture
-- Results and Share pages submit email (+ optional company/role) to `POST /api/leads`.
-- Backend rate-limits and honeypot-filters submissions.
-- Backend stores the lead in Supabase table `public.leads`.
-- Backend attempts to send a confirmation email via Resend (no-op if not configured).
+### D) View shared results + link previews (OG)
+1. When someone opens `/share/:id`:
+   - Social crawlers hit the backend route `GET /share/:id` which returns OG/Twitter meta tags for a clean link preview.
+   - A browser loads the SPA route `/share/:id`, which then fetches the JSON audit payload from `GET /api/share/:id`.
 
-## Stack justification
-- **Vite + React + TS:** fast iteration, strong typing for pricing + audit engine.
-- **Express backend:** simple API + OG HTML endpoint without SSR complexity.
-- **Supabase Postgres:** production-ready persistence with minimal ops overhead.
-- **Gemini API:** narrative summarization only (calculations remain rule-based).
-- **Resend:** lightweight transactional email sending.
+### E) Generate narrative summary (optional LLM)
+1. Frontend calls `POST /api/narrative` for a given `shareId`.
+2. Backend:
+   - loads the stored audit payload from Supabase
+   - returns a cached narrative if present
+   - otherwise calls Gemini and enforces a strict JSON schema (with a single repair retry)
+   - if Gemini fails, returns a deterministic fallback narrative so the feature degrades gracefully
+3. Backend stores the narrative + metadata back onto the share record.
 
-## Scaling discussion (10k audits/day)
-- Move rate limiting to a shared store (Redis/Upstash) when running multiple backend instances.
-- Cache public audit fetches (CDN edge) for hot share links.
-- Async narrative generation (queue) if LLM latency/cost becomes a bottleneck.
-- Add monitoring + alerting (e.g., request rate, error rate, LLM spend).
-- Partition or TTL older public audits/leads depending on retention policy.
+### F) Lead capture (backend + DB + email)
+1. Results and Share pages submit lead data to `POST /api/leads`.
+2. Backend applies abuse protections (rate limiting + honeypot).
+3. Lead is stored in Supabase table `public.leads`.
+4. Backend attempts to send a confirmation email via Resend (no-op if not configured).
+
+## 3) Stack choices (why this stack)
+- **Vite + React + TypeScript:** fast iteration, strong typing, and a clean way to keep the audit engine deterministic and testable.
+- **Deterministic audit engine in the browser:** avoids hallucinated numbers and keeps results explainable with unit tests.
+- **Express + TypeScript backend:** minimal server to support persistence, OG tags, narrative generation, and lead capture.
+- **Supabase Postgres:** production-grade persistence with low setup cost; simple JSON storage for `audit_result`.
+- **Gemini:** used only for narrative (copy), not the math.
+- **Resend:** simple transactional email API suitable for MVP confirmation emails.
+
+## 4) What I’d change for 10k audits/day
+- **Move expensive work off the request path:** narrative generation should be async (queue + worker) with retries and backoff.
+- **Add caching/CDN for share reads:** cache `GET /share/:id` OG HTML and `GET /api/share/:id` responses at the edge for hot links.
+- **Stronger rate limiting + bot defense:** use a shared store (Redis/Upstash) for rate limits across multi-instance deploys; consider hCaptcha for lead forms.
+- **DB posture:** add retention/TTL policies for old audits/leads, and consider partitioning if tables grow large.
+- **Observability:** structured logs, request tracing, and dashboards for latency/error rate; track LLM usage/cost and email delivery failures.
+- **Security hardening:** tighten CORS to known origins, add RLS policies where appropriate, and rotate/lock down service keys.

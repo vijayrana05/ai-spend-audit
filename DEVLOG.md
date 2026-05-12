@@ -2,13 +2,13 @@
 
 **Hours worked:** 3.5
 
-**What I did:** Built Phase 1 of the React + Vite frontend. Added the landing page, audit form page, results placeholder page, and share placeholder page. Set up React Router for `/`, `/audit`, `/results`, and `/share/:id`. Implemented a typed `useAuditDraft` hook with `localStorage` persistence for team size, use case, and tool entries.
+**What I did:** Built Phase 1 of the React + Vite frontend. Added the landing page, audit form page, results placeholder page, and share placeholder page. Set up React Router for `/`, `/audit`, `/results`, and `/share/:id`. Also implemented a typed `useAuditDraft` hook with `localStorage` persistence for team size, use case, and tool entries so form progress wouldn’t get lost during testing.
 
-**What I learned:** Building the full user flow first makes iteration faster later. Persisting form state early also makes manual testing much easier.
+**What I learned:** Building the complete user flow first made later iteration much faster. Setting up persistence early also saved a lot of time while manually testing the forms and navigation.
 
-**Blockers / what I'm stuck on:** `frontend/src/lib/server.ts` is using `process.env` inside the Vite frontend, which is breaking build/typecheck. Need to either switch to `import.meta.env` or move the helper out of the frontend.
+**Blockers / what I'm stuck on:** `frontend/src/lib/server.ts` is still using `process.env` inside the Vite frontend, which breaks the build/typecheck. Need to switch it to `import.meta.env` or move the helper into a server-only location.
 
-**Plan for tomorrow:** Fix the build issue, create `PRICING_DATA.md` with official pricing sources, and start implementing the first audit engine rules with unit tests.
+**Plan for tomorrow:** Fix the build issue, create `PRICING_DATA.md` with official pricing references, and start implementing the first audit engine rules along with unit tests.
 
 ---
 
@@ -16,13 +16,13 @@
 
 **Hours worked:** 5
 
-**What I did:** Implemented Phase 2 (pricing + audit engine). Added `PRICING_DATA.md` at the repo root with official pricing URLs and verification dates, then mirrored the same values into a typed pricing table in `frontend/src/audit/pricing.ts`. Built a deterministic, rule-based audit engine in `frontend/src/audit/engine.ts` that generates per-tool recommendations, estimated savings, and links back to pricing sources. Integrated the engine into the Results page so totals and per-tool breakdown render from real calculations instead of placeholder numbers.
+**What I did:** Implemented Phase 2 (pricing + audit engine). Added `PRICING_DATA.md` at the repo root with official pricing links and verification dates, then mirrored the values into a typed pricing table in `frontend/src/audit/pricing.ts`. Built a deterministic rule-based audit engine in `frontend/src/audit/engine.ts` that generates per-tool recommendations, estimated savings, and pricing source links. Integrated the engine into the Results page so the totals and tool breakdowns now come from actual calculations instead of placeholder values.
 
-**What I learned:** Having a single, traceable pricing source makes the audit logic much easier to justify and test. Writing unit tests early also helped keep the recommendation rules “tight” and prevented regressions while iterating.
+**What I learned:** Having one clear pricing source made the audit logic much easier to reason about and maintain. Writing tests alongside the rules also helped catch edge cases early before they became messy later.
 
-**Blockers / what I'm stuck on:** Need to refine plan nuances (e.g., minimum seats on team tiers, usage-based plans, and the "retail vs credits" framing) so recommendations stay financially credible. Also still need to resolve the `frontend/src/lib/server.ts` build/typecheck issue (Vite env handling / moving server-only code out of the frontend).
+**Blockers / what I'm stuck on:** Still need to improve handling for plan nuances like minimum seats, usage-based pricing, and credits vs retail pricing so recommendations stay realistic. The `frontend/src/lib/server.ts` env/build issue is also still unresolved.
 
-**Plan for tomorrow:** Expand the rule set for Claude/ChatGPT (min seats + plan comparisons), improve credits logic and UI messaging, add more audit engine tests for the new rules, and start Phase 3 work on a proper shareable results flow.
+**Plan for tomorrow:** Expand the ChatGPT/Claude recommendation rules, improve credits logic + UI messaging, add more tests for the updated rules, and begin work on the shareable results flow.
 
 ---
 
@@ -30,13 +30,15 @@
 
 **Hours worked:** 6
 
-**What I did:** Completed Phase 3 (shareable audits + OG tags + real persistence). Built backend endpoints for creating and retrieving share records (`POST /api/audits`, `GET /api/share/:id`) and an OG-tag HTML route (`GET /share/:id`) that redirects to the frontend share page. Replaced the in-memory share store with a Supabase-backed implementation using `@supabase/supabase-js`, created the `public.public_audits` table via `SUPABASE_SCHEMA.sql`, and wired the backend to read `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` via `dotenv`. On the frontend, kept the share UX (Results → “Create share link” → `/share/:id`) and verified the full flow end-to-end (create record, fetch record, OG meta tag HTML response).
+**What I did:** Finished Phase 3 (shareable audits + OG tags + persistence). Added backend endpoints for creating and retrieving shared audits (`POST /api/audits`, `GET /api/share/:id`) and built an OG-tag HTML route (`GET /share/:id`) that redirects to the frontend share page. Replaced the temporary in-memory store with a Supabase-backed implementation using `@supabase/supabase-js`, created the `public.public_audits` table via `SUPABASE_SCHEMA.sql`, and connected the backend to `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` through `dotenv`.
 
-**What I learned:** OG previews for share links don’t work reliably in SPAs without a server-rendered HTML response. Using Supabase with a service role key makes the MVP simple, but it requires careful secret handling (never expose the key client-side).
+On the frontend side, I kept the share flow simple: Results → “Create share link” → `/share/:id`, then tested the full flow end-to-end including DB persistence and OG metadata rendering.
 
-**Blockers / what I'm stuck on:** Need to rotate any leaked Supabase keys and ensure `.env` files are ignored by git. Still need to fix the lingering Vite build/typecheck issue around server-only Supabase helpers in the frontend (`frontend/src/lib/server.ts`).
+**What I learned:** OG previews don’t work reliably with pure SPAs unless the server returns actual HTML metadata. Supabase made persistence very quick to set up, but using a service role key also made secret handling much more important.
 
-**Plan for tomorrow:** Start Phase 4 by adding an LLM-generated narrative summary endpoint in the backend (with prompt versioning in `PROMPTS.md`), store the summary alongside the shared audit in Supabase, and render the narrative section on both Results and Share pages.
+**Blockers / what I'm stuck on:** Need to rotate any exposed Supabase keys and double-check that `.env` files are fully ignored by git. The Vite build/typecheck issue around server-only helpers in `frontend/src/lib/server.ts` is also still pending.
+
+**Plan for tomorrow:** Start Phase 4 by adding an LLM-generated narrative summary endpoint, introduce prompt versioning with `PROMPTS.md`, persist summaries in Supabase, and render them on both Results and Share pages.
 
 ---
 
@@ -44,15 +46,19 @@
 
 **Hours worked:** 6.5
 
-**What I did:** Completed Phase 4 and implemented Phase 5 lead capture. On Phase 4, I finished the backend narrative summary endpoint (`POST /api/narrative`) and made it reliable by enforcing a strict JSON schema (Zod validation) and adding a single "repair" retry if the model returns malformed output. I also updated the Supabase schema to include narrative columns (`narrative_summary`, `narrative_model`, `narrative_prompt_version`, `narrative_created_at`) using `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` (because `CREATE TABLE IF NOT EXISTS` doesn’t apply upgrades). On the frontend, I kept the “Generate summary” UX on the shared audit page and rendered the narrative sections, along with model + prompt metadata.
+**What I did:** Completed Phase 4 and implemented Phase 5 lead capture.
 
-For Phase 5, I added lead capture forms on both the Results and Share pages, created a new backend route (`POST /api/leads`) to persist leads into a new `public.leads` table in Supabase, and added basic abuse protection. Abuse protection includes per-route rate limiting (`express-rate-limit`) and a honeypot field that silently drops obvious bot submissions. I also added a unique index on `lower(email)` to reduce duplicate lead spam.
+For Phase 4, I finished the backend narrative summary endpoint (`POST /api/narrative`) and made it more reliable by enforcing strict JSON schema validation with Zod and adding a retry/repair pass when the model returned malformed JSON. I also updated the Supabase schema to include narrative-related columns (`narrative_summary`, `narrative_model`, `narrative_prompt_version`, `narrative_created_at`) using `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
 
-**What I learned:** Schema migrations in Supabase need explicit `ALTER TABLE` steps or existing projects will fail at runtime. For AI-generated JSON, “prompting harder” isn’t enough—server-side validation and retry/repair logic is needed to make the feature production-stable. On lead capture, a combination of rate limiting + honeypot provides a decent MVP baseline without adding extra services.
+On the frontend, I added the “Generate summary” flow and rendered narrative sections along with metadata about the model and prompt version used.
 
-**Blockers / what I'm stuck on:** Still need to implement a real confirmation email (Resend/Postmark/SES) to fully satisfy the lead capture requirement, and add a fallback templated narrative if the LLM fails. Also need to finish the remaining required root docs + CI workflow and ensure commits are spread across at least 5 calendar days.
+For Phase 5, I added lead capture forms on both the Results and Share pages, created a backend route (`POST /api/leads`) to persist leads into a new `public.leads` table, and added basic abuse protection. This included per-route rate limiting using `express-rate-limit` and a honeypot field to silently filter obvious bot submissions. I also added a unique index on `lower(email)` to reduce duplicate spam entries.
 
-**Plan for tomorrow:** Implement confirmation email sending for leads, add graceful fallback narrative behavior on `/api/narrative`, then start the required deliverables (`ARCHITECTURE.md`, `TESTS.md`, `REFLECTION.md`, `GTM.md`, etc.) and GitHub Actions CI.
+**What I learned:** AI-generated JSON becomes much more reliable once you combine prompting with server-side validation and retry logic. I also learned that Supabase schema updates need explicit migration steps instead of relying on `CREATE TABLE IF NOT EXISTS`.
+
+**Blockers / what I'm stuck on:** Still need to add real confirmation emails (Resend/Postmark/SES) and implement a fallback narrative if the LLM completely fails. I also need to finish the remaining documentation deliverables and CI workflow setup.
+
+**Plan for tomorrow:** Add confirmation email sending, implement graceful fallback narrative behavior, then start the required docs (`ARCHITECTURE.md`, `TESTS.md`, `REFLECTION.md`, `GTM.md`, etc.) and GitHub Actions CI.
 
 ---
 
@@ -60,12 +66,34 @@ For Phase 5, I added lead capture forms on both the Results and Share pages, cre
 
 **Hours worked:** 7
 
-**What I did:** Finished the remaining “production-style SaaS” requirements that were still open. Implemented a deterministic fallback narrative summary so shared audits remain useful even if the LLM fails, and updated the narrative route to return a valid summary (and persist it) instead of throwing a 500. Implemented lead confirmation emails using Resend (configurable via env) and expanded lead capture to support optional `company` and `role` fields. Added a GitHub Actions CI workflow that runs frontend lint/tests/build and backend build on every push/PR. Created the remaining required root deliverable docs (architecture, tests, reflection, GTM/economics, landing copy, metrics) and updated the root README with setup instructions, deployment notes, and key technical tradeoffs.
+**What I did:** Finished most of the remaining “production-style SaaS” requirements. Added a deterministic fallback narrative summary so shared audits still return useful output even if the LLM fails, and updated the narrative endpoint to persist fallback summaries instead of returning a 500.
 
-On the engineering side, I fixed front-end lint blockers that would fail CI by restructuring the button component exports (to satisfy React Fast Refresh rules), tightening types on the share page payload, and removing remaining explicit `any` usage from linted code paths.
+Implemented lead confirmation emails using Resend and expanded the lead form to support optional `company` and `role` fields. Added a GitHub Actions CI workflow that runs frontend lint/tests/build and backend build on every push and PR.
 
-**What I learned:** Making an MVP “launchable” is often less about adding net-new features and more about reliability guardrails and submission packaging: failure modes (LLM errors), abuse protections, CI discipline, and clear documentation. Also, strict lint rules can force better component boundaries and more explicit typing, which pays off quickly once CI is in place.
+I also completed the remaining root-level deliverable docs including architecture, testing, reflection, GTM/economics, landing copy, and metrics documentation. Updated the README with setup instructions, deployment notes, and technical tradeoffs.
 
-**Blockers / what I'm stuck on:** The only remaining mandatory item that can’t be “coded” is `USER_INTERVIEWS.md`—it needs 3 real interviews with quotes and resulting design changes. Also still need to add screenshots/demo link and deployed URL to the README.
+On the frontend side, I fixed several lint issues that were failing CI by restructuring button exports for React Fast Refresh compatibility, tightening share page typing, and removing leftover explicit `any` usage from linted paths.
 
-**Plan for tomorrow:** Conduct 3 user interviews (real founders/operators), update `USER_INTERVIEWS.md` with direct quotes and the specific changes made based on feedback, and add a short Loom demo + screenshots to the README. Then ensure commits are spread across the required calendar days.
+**What I learned:** Shipping an MVP is often more about reliability, edge cases, and polish than adding new features. CI, error handling, abuse protection, and documentation ended up taking a lot more time than expected, but they also made the project feel much more complete.
+
+**Blockers / what I'm stuck on:** The only remaining mandatory item is `USER_INTERVIEWS.md`, since it requires real interviews and feedback quotes. I also still need to add screenshots/demo links and the deployed URL to the README.
+
+**Plan for tomorrow:** Conduct 3 user interviews, document quotes + resulting changes in `USER_INTERVIEWS.md`, add a short Loom demo and screenshots to the README, and make sure commits are distributed across the required calendar days.
+
+---
+
+## Day 6 — 2026-05-12
+
+**Hours worked:** 4
+
+**What I did:** Deployed the backend to Render and the frontend to Vercel from the same monorepo using separate service root directories. Connected the deployed frontend to the deployed backend using the `VITE_BACKEND_BASE_URL` environment variable after discovering the live build was still falling back to `localhost`, causing `ERR_CONNECTION_REFUSED`.
+
+I also validated the lead capture pipeline end-to-end by creating the `public.leads` table in Supabase from `backend/SUPABASE_SCHEMA.sql` and confirming inserts from both the Results and Share pages.
+
+In addition, I configured Resend for transactional emails and verified the integration path using env-based API keys. While testing, I ran into Resend’s sandbox restriction where `resend.dev` sender domains can only send emails to the account owner unless a custom domain is verified, and documented that behavior for deployment notes.
+
+Finally, I reran the frontend test suite to make sure the audit engine and UI flows were still stable after the deployment-related changes.
+
+**What I learned:** A lot of production issues come from deployment wiring rather than application logic. Environment variables, base URLs, backend connectivity, and provider-specific restrictions can easily break features that work perfectly in local development.
+
+**Blockers / what I'm stuck on:** None. Core MVP functionality, CI, deployment setup, and integrations are complete. The remaining tasks are mostly optional polish items like verified email domains, more screenshots, and additional interview feedback.

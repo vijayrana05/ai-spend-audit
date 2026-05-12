@@ -1,6 +1,6 @@
 # PRICING_DATA (Source of Truth)
 
-All pricing numbers used by the audit engine must map to an official vendor pricing page and a verification date.
+
 
 > Note: Some Enterprise plans are "contact sales" and do not have public pricing. For those, the audit engine will not compute savings using a vendor price (it will only use user-provided spend).
 

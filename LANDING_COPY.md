@@ -1,31 +1,34 @@
 # LANDING_COPY
 
-## Headline
-Stop overpaying for AI tools.
+## Hero headline 
+Cut your AI tool bill in minutes.
 
-## Subheadline
-Mint-style audit for Cursor, Copilot, ChatGPT, Claude, and more. Get a credible savings estimate, an action plan, and a shareable report in minutes.
+## Subheadline 
+Audit Cursor, Copilot, ChatGPT, Claude, and APIs. Get a rule-based savings estimate and a shareable report—no billing access required.
 
-## Primary CTA
-Run a free audit
+## Primary CTA copy
+Run free audit
 
-## Secondary CTA
-Share an example report
+## Social proof 
+> “Found $620/month of waste across Team plans.” — Seed-stage CTO *(mocked)*
 
-## FAQ
+> “The shareable report made it easy to get finance buy-in.” — Head of Engineering *(mocked)*
 
-### Is this connected to my billing accounts?
-No. You enter your current plan and monthly spend. The audit engine is rule-based and cites vendor pricing sources.
+> “Finally saw our AI spend in one place with clear next steps.” — Founder *(mocked)*
 
-### Is the report safe to share?
-Share links are sanitized and do not include your company name or personal details.
+## FAQ 
 
-### Do you use AI for the math?
-No. AI is only used to generate a narrative summary. All calculations and recommendations are rule-based.
+### 1) Do you connect to my billing accounts?
+No. You manually enter your current plan, seats, and monthly spend. This tool does not require OAuth or access to your vendor billing.
 
-### What does Credex do?
-Credex provides discounted AI credits and helps startups optimize AI infrastructure spend.
+### 2) Is the math done by AI?
+No. Recommendations and savings calculations are deterministic and rule-based. AI is used only to generate an optional narrative summary of the results.
 
-## Social proof (placeholders)
-- “Found $700/mo in unnecessary team plans.” — Seed founder
-- “Finally understood our AI stack costs.” — Engineering manager
+### 3) What tools does the audit cover?
+The audit covers common AI subscriptions and developer assistants (e.g., Cursor, GitHub Copilot, ChatGPT, Claude) and can include API spend buckets (e.g., OpenAI API).
+
+### 4) What happens after I run the audit?
+You’ll get a results page with suggested plan changes (downgrades/switches/credits), an estimated monthly savings number, and an optional shareable report link.
+
+### 5) Is the report safe to share internally?
+Share links are designed to be “clean.” They don’t include your company name by default, and they only display the audit inputs/results you provided.
