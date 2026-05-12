@@ -5,7 +5,7 @@ SpendPilot is a production-style SaaS MVP that helps small teams audit AI tool s
 The audit math is deterministic for transparency/testability; an LLM is used only to produce a narrative summary of the computed results.
 
 ## Deployed URL
-- **App:** https://ai-spend-audit-bitddhfym-vijays-projects-0cb55e04.vercel.app/
+- **App:** https://ai-spend-audit-ax5s5csul-vijays-projects-0cb55e04.vercel.app/
 
 
 ## Screenshots
