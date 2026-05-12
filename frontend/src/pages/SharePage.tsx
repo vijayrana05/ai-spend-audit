@@ -43,12 +43,36 @@ export default function SharePage() {
  
   useEffect(() => {
     if (!id) return;
+
     let cancelled = false;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState({ status: "loading" });
+
     fetchSharedAudit(id)
-      .then((raw) => { if (!cancelled) setState({ status: "success", data: raw as SharedAuditResponse }); })
-      .catch((err) => { if (!cancelled) setState({ status: "error", message: err instanceof Error ? err.message : "Failed to load" }); });
-    return () => { cancelled = true; };
+      .then((raw) => {
+        if (!cancelled) {
+          setState({
+            status: "success",
+            data: raw as SharedAuditResponse,
+          });
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setState({
+            status: "error",
+            message:
+              err instanceof Error
+                ? err.message
+                : "Failed to load",
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
  
   const audit = useMemo(() => {
