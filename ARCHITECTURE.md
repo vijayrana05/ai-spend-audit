@@ -4,25 +4,25 @@
 
 ```mermaid
 graph TD
-  U[User (Browser)] --> FE[Frontend: Vite + React + TypeScript]
+  U["User (Browser)"] --> FE["Frontend: Vite + React + TypeScript"]
 
-  FE -->|Run deterministic rules| AE[Audit Engine (in-browser)]
+  FE -->|Run deterministic rules| AE["Audit Engine (in-browser)"]
   AE -->|AuditResult JSON| FE
 
-  FE -->|POST /api/audits (sanitized auditResult)| BE[Backend: Express + TypeScript]
-  BE -->|Insert/Select| SB[(Supabase Postgres)]
+  FE -->|POST /api/audits (sanitized auditResult)| BE["Backend: Express + TypeScript"]
+  BE -->|Insert/Select| SB[("Supabase Postgres")]
 
   FE -->|GET /api/share/:id| BE
   BE -->|audit_result JSON| FE
 
-  OG[Social crawler (Slack/X)] -->|GET /share/:id| BE
+  OG["Social crawler (Slack/X)"] -->|GET /share/:id| BE
   BE -->|OG HTML + redirect| OG
 
   FE -->|POST /api/narrative| BE
-  BE -->|Gemini API (JSON)| LLM[Google Gemini]
+  BE -->|Gemini API (JSON)| LLM["Google Gemini"]
 
   FE -->|POST /api/leads| BE
-  BE -->|Best-effort confirm email| EM[Resend]
+  BE -->|Best-effort confirm email| EM["Resend"]
 ```
 
 ## 2) Data flow: user input → audit result
