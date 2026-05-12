@@ -107,11 +107,8 @@ export default function AuditPage() {
             <span className="text-xs font-semibold tracking-widest uppercase text-[#f0ede8]/50">SpendPilot · AI Spend Audit</span>
           </div>
           <div className="flex items-center gap-3">
-            {totalMonthly > 0 && (
-              <div className="text-xs text-[#f0ede8]/40 tabular-nums">
-                Total entered: <span className="text-[#c9a84c] font-semibold">${totalMonthly.toFixed(0)}/mo</span>
-              </div>
-            )}
+            
+            
             <button onClick={() => navigate("/")} className="px-4 py-1.5 text-xs border border-[#f0ede8]/15 text-[#f0ede8]/50 rounded hover:border-[#f0ede8]/30 hover:text-[#f0ede8]/80 transition-all">
               ← Back
             </button>
